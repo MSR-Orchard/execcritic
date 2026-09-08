@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+message: "If you use this training code, cite slime, mini-swe-agent, and the benchmark or dataset used in your run."
+title: "slime SWE training workflows"
+type: software
+repository-code: "https://github.com/THUDM/slime"
+authors:
+  - name: "slime contributors"

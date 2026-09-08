@@ -1,0 +1,193 @@
+agent:
+  agent_class: generated_test_submit
+  system_template: |
+    You are a careful software engineer that interacts with a computer shell to write regression tests.
+  instance_template: |
+    {% if max_generated_test_cases <= 1 %}
+    You are writing ONE new regression test that reproduces the bug described below.
+    {% else %}
+    You are writing up to {{max_generated_test_cases}} issue-backed regression tests that reproduce the bug described below.
+    {% endif %}
+    You are in a real shell at /testbed, checked out at the BUGGY commit: the bug is NOT yet fixed.
+    A correct generated test should cleanly fail here for the issue behavior.
+
+    <original_issue>
+    {{task}}
+    </original_issue>
+
+    The conda `testbed` environment is already active for every command and the package under test
+    is installed/importable. Do not create a virtualenv, reinstall, or run pip.
+    You are not given a gold patch, oracle tests, or an oracle test command. Infer everything needed
+    for the generated test from the issue and the buggy repository.
+
+    Your first response must be exactly one grounding_plan tool call. Do not inspect the
+    repository, run bash, or write the test before the harness records this initial plan.
+    The plan should state your current x -> y hypothesis from the issue:
+    - issue_summary: what behavior is broken
+    - public_entrypoint: likely public API/command/object to test, or the candidate to verify
+    - public_integration_path: the user-facing path that should reach the behavior, such as public API -> object
+      method, CLI command, framework runner, documented workflow, or adjacent integration-test pattern
+    - trigger_input: x, the input/state that triggers the bug
+    - expected_output: y, the observable behavior expected after a correct fix
+    - evidence: why y follows from the issue, docs, existing tests, or public invariants
+    - test_strategy: how to test behavior without relying on implementation details
+    - exploration_plan: what source/tests/APIs you will inspect to validate imports, fixtures, and x -> y
+    - non_assertions: incidental details you will avoid pinning
+
+    After the grounding_plan is recorded, explore the repository with bash before writing the test.
+    Inspect the most relevant available evidence, including:
+    - README and CONTRIBUTING documentation
+    - CI workflows and repository scripts
+    - Makefile, tox.ini, pyproject.toml, setup.cfg, pytest.ini, or equivalent test configuration
+    - adjacent tests for file placement, imports, fixtures, helpers, base classes, and assertion style
+    - the implementation and public API relevant to the issue
+
+    When ready, call write_generated_test with all of:
+    - test_code: complete Python source for the generated regression test
+    - test_file_path: a new, currently nonexistent repository-native test path relative to /testbed
+    - test_command: the exact repository-native command that runs only this generated test; a leading
+      `cd /testbed &&` is optional and will be normalized away
+    - command_evidence: the repository files or adjacent-test conventions supporting that path and command
+    - oracle: the issue-backed public behavior contract described below
+
+    The harness accepts generated-test writes only through write_generated_test. Do not edit the
+    selected generated test path with bash. The path and command are part of the candidate: if either
+    changes, submit the full execution contract again and the harness will rerun it.
+
+    {% if max_generated_test_cases <= 1 %}
+    The generated file must contain exactly one test case:
+    - pytest style: one top-level test_* function
+    - unittest/framework style: one test_* method inside one test class
+    {% else %}
+    The generated file must contain at most {{max_generated_test_cases}} test cases:
+    - pytest style: up to {{max_generated_test_cases}} top-level test_* functions
+    - unittest/framework style: up to {{max_generated_test_cases}} test_* methods, preferably inside one test class
+    - use multiple test cases only when they cover distinct issue-backed triggers, boundary cases,
+      public invariants, or positive/negative cases for the same bug
+    {% endif %}
+    - helper functions/classes are allowed only if they are not named test_*
+    - do not use pytest.mark.parametrize; use separate test cases for distinct concrete trigger inputs
+
+    The oracle contract should say:
+    - entrypoint: the public API, command, object, or documented behavior under test
+    - public_integration_path: the concrete public integration path used by this test; this must not be a private
+      helper, internal module, source inspection path, or implementation shortcut
+    - trigger_input: x, the input/state that triggers the bug
+    - expected_output: y, the externally observable behavior expected after a correct fix
+    - evidence: why y is correct, such as issue_explicit, docs, existing_tests, or public_invariant
+    - non_assertions: implementation details or output fragments intentionally not pinned
+    If you write multiple test cases, the oracle contract should describe their shared issue behavior and the
+    distinct issue-backed triggers or invariants each case covers.
+
+    Rules:
+    - Explore the repo enough to ground the test in real public APIs, call signatures, and behavior.
+    - Prefer public integration paths over direct private helpers: use the same user-facing API, CLI,
+      documented object, framework runner, or adjacent-test workflow a maintainer would expect to support.
+    - Infer the framework, file placement, imports, fixtures, base classes, and runner from repository evidence.
+    - Select a new adjacent test file; never overwrite an existing repository test.
+    - The execution command must explicitly target only the selected generated test, not a directory or full suite.
+    - For input/output bugs, identify the triggering input x and the expected observable output y.
+    - Derive y from the issue, documented semantics, existing behavior contracts, or stable public invariants.
+    - Exercise runtime behavior through public APIs, commands, or documented objects.
+    - Use source inspection to learn how to write the test, not as the test oracle.
+    - Do not assert on source text, patch text, implementation snippets, line numbers, or diff shape.
+    - If the issue does not specify an exact output/value/message, assert a behavioral invariant any correct fix must satisfy.
+    - Avoid import, collection, syntax, network, sleep, randomness, or environment-only failures.
+    - Assert only behavior promised by the issue. Do not over-pin implementation details.
+    - Keep the regression focused on issue-backed triggers. When multiple test cases are allowed, each one must
+      exercise a distinct public behavior, boundary, or invariant implied by the issue; do not add unrelated
+      variants or extra tests beyond the configured limit.
+    - Do not assert import strings, SQL shape, repr text, private attributes, internal node shapes, or intermediate
+      implementation state unless the issue explicitly makes that the public contract.
+    - Do not edit source code or unrelated tests.
+
+    Do not run the generated test command yourself. After {{ structured_test_tool }} records the candidate,
+    the harness will automatically materialize the selected test artifact, run the exact submitted command, and feed back a
+    structured result if it does not cleanly fail. Use that feedback to revise the test.
+    As soon as the harness observes a clean issue failure, it will submit the current generated
+    test automatically.
+  step_limit: 80
+  cost_limit: 5.0
+  test_file: test_model_gen.py
+  require_execution_contract: true
+  require_self_test: true
+  require_self_test_clean_fail: true
+  require_only_test_file_changes: true
+  require_structured_test_write: true
+  require_oracle_contract: true
+  require_public_integration_path: true
+  require_single_test_case: true
+  max_generated_test_cases: 3
+  auto_run_self_test: true
+  auto_submit_on_clean_self_test: true
+  require_grounding_plan: true
+  require_grounding_plan_first: true
+  min_inspection_commands_after_grounding_plan: 3
+  grounding_plan_tool: grounding_plan
+  structured_test_tool: write_generated_test
+  max_structured_test_writes: 5
+  force_submit_on_max_structured_test_writes: false
+  block_model_self_test_commands: true
+  max_rejections: 3
+  allow_after_max_rejections: false
+  submit_file_contents: true
+
+environment:
+  cwd: "/testbed"
+  timeout: 60
+  interpreter: ["bash", "-c"]
+  env:
+    PAGER: cat
+    MANPAGER: cat
+    LESS: -R
+    PIP_PROGRESS_BAR: "off"
+    TQDM_DISABLE: "1"
+    PYTHONDONTWRITEBYTECODE: "1"
+  environment_class: azure_modal
+  sandbox_timeout: 3600
+  heartbeat_interval: 60
+
+model:
+  model_class: trapi_response
+  model_name: "gpt-5.3-codex_2026-02-24"
+  cost_tracking: "ignore_errors"
+  observation_template: |
+    {% if output.exception_info -%}
+    <exception>{{output.exception_info}}</exception>
+    {% endif -%}
+    <returncode>{{output.returncode}}</returncode>
+    {% if output.output | length < 10000 -%}
+    <output>
+    {{ output.output -}}
+    </output>
+    {%- else -%}
+    <warning>
+    The output of your last command was too long. Use a narrower command, head, tail, sed, or redirect and inspect selectively.
+    </warning>
+    <output_head>
+    {{ output.output[:5000] }}
+    </output_head>
+    <output_tail>
+    {{ output.output[-5000:] }}
+    </output_tail>
+    {%- endif -%}
+  format_error_template: |
+    Tool call error:
+
+    <error>
+    {{error}}
+    </error>
+
+    Every response must use grounding_plan, bash for inspection, or write_generated_test for the generated test source.
+    The first response must be exactly one grounding_plan tool call.
+    When using grounding_plan, include public_integration_path.
+    When using write_generated_test, include test_file_path, exact focused test_command, command_evidence,
+    and the oracle contract with public_integration_path, x, y, and evidence.
+    Do not run the generated test command or submit manually; the harness writes, tests, and submits automatically.
+  model_kwargs:
+    max_output_tokens: 8192
+    parallel_tool_calls: true
+    timeout: 300
+  extra_tools:
+    - grounding_plan
+    - write_generated_test

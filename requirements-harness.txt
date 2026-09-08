@@ -1,0 +1,8 @@
+# Run from the extracted bundle root.
+-e ./swe_harness[azure_modal,dev]
+
+# The current verified environment uses this for the official SWE-bench parser.
+swebench==4.1.0
+
+# Imported directly by the bundled Azure sandbox client.
+aiohttp

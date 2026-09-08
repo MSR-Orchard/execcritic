@@ -1,0 +1,100 @@
+# Resolve-style test_patch generation — self-contained single-machine eval config.
+# Design: swe_harness/gentest_v2/RESOLVE_STYLE_TESTPATCH_DESIGN.md
+# Agent: testpatch_resolve (model bash-edits files -> harness git diff -> official eval verify).
+#
+# Verified end-to-end on pod tlt-search (astropy-12907): codex-5.3 (trapi) and base
+# Qwen3.5-35B-A3B (think on) both reach base_clean_fail=True and self-submit.
+#
+# Usage (single-machine eval via swe_harness/gentest_v2/smoke_resolve.py or an eval driver that
+# injects verify_runner). For base Qwen3.5 served by sglang:
+#   - serve: sglang.launch_server ... --reasoning-parser qwen3 --tool-call-parser qwen3_coder
+#   - model_name: hosted_vllm/<abs-path-to-Qwen3.5-35B-A3B>
+#   - env: MSWEA_COST_TRACKING=ignore_errors
+#   - model_kwargs.tool_choice: auto  (NOT required — required leaks </parameterfunction> into args)
+#   - model_kwargs.chat_template_kwargs.enable_thinking: true
+
+agent:
+  agent_class: testpatch_resolve
+  step_limit: 40
+  cost_limit: 5.0
+  verifier_timeout: 900
+  system_template: |
+    You are an experienced maintainer of this repository writing a single regression test that
+    reproduces the bug described in the issue. You work like a maintainer: edit the existing test
+    tree, reuse the repo's own imports, fixtures, and test runner, and run tests yourself to
+    confirm behavior before you submit.
+  instance_template: |
+    You are in a real shell at /testbed, checked out at the BUGGY commit: the bug is NOT fixed.
+    A correct regression test should cleanly FAIL here for the issue behavior, and would pass once
+    a correct fix is applied (you do not have the fix).
+
+    <original_issue>
+    {{task}}
+    </original_issue>
+
+    The conda `testbed` environment is active and the package is importable. Do not create a
+    virtualenv, reinstall, or run pip.
+
+    You do NOT need to make the test command run green yourself in this shell. When you call
+    write_test_patch, the harness runs your declared test_command in the repository's OFFICIAL test
+    environment (the same runner the project's CI uses). Use the shell only to discover the
+    repository-native command and to sanity-check your edits — do not hand-build a settings module
+    or a bespoke runner. Prefer the project's own test entrypoint (e.g. its test runner script) with
+    the identifier format that runner expects.
+
+    Protocol:
+    1. Your FIRST response must be exactly one grounding_plan tool call stating your x -> y
+       hypothesis (issue_summary, public_entrypoint, public_integration_path, trigger_input,
+       expected_output, evidence, test_strategy, exploration_plan).
+    2. Then explore with bash. You MAY run tests yourself (pytest, ./tests/runtests.py, bin/test)
+       to discover the repo's runner conventions, node ids, imports, and fixtures. Prefer editing
+       an EXISTING test file next to the code under test and reusing its imports/fixtures rather
+       than creating a brand-new file with fresh setup.
+       Edit files DIRECTLY in the workspace with bash (sed, python, cat > file, redirection). Do
+       NOT hand-write a diff — the harness captures your edits with `git diff` for you.
+       Before submitting, run the exact focused command you intend to declare and confirm it is
+       the repository-native command for the target test.
+    3. Once your file edits are in place in /testbed, call write_test_patch with ONLY the exact
+       test_command. The harness runs `git diff` over your workspace edits to build the patch,
+       applies it on the buggy Base, and executes your test_command. You do NOT pass a diff; if
+       `git diff` is empty the call is rejected (edit the files first). The returned patch_hash
+       binds both the captured patch and test_command.
+    4. Review the feedback. Decide yourself: explore more, edit + write_test_patch again, or —
+       when the test cleanly FAILS on the buggy base for the issue behavior — call
+       submit_test_patch with the patch_hash from the latest write_test_patch feedback. You must
+       write_test_patch (and see a patch_hash) BEFORE you can submit. Nothing is submitted unless
+       you submit it.
+
+    Write the assertion for the CORRECTED behavior y (what a fix produces), never the bug symptom.
+    Keep assertions minimal: assert the guaranteed invariant, not incidental exact values.
+  format_error_template: |
+    Tool call error:
+
+    <error>
+    {{error}}
+    </error>
+
+    Every response must use grounding_plan, bash, write_test_patch, or submit_test_patch.
+    The first response must be exactly one grounding_plan tool call.
+
+model:
+  extra_tools:
+    - grounding_plan
+    - write_test_patch
+    - submit_test_patch
+  model_kwargs:
+    max_output_tokens: 8192
+    timeout: 600
+    # base Qwen3.5 via sglang: auto (required leaks tags), think on
+    tool_choice: auto
+    chat_template_kwargs:
+      enable_thinking: true
+
+environment:
+  environment_class: azure_modal
+  env:
+    PAGER: cat
+    MANPAGER: cat
+    LESS: -R
+    PIP_PROGRESS_BAR: 'off'
+    TQDM_DISABLE: '1'

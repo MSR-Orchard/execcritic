@@ -1,0 +1,29 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Credentials and machine-local configuration
+.env
+.env.*
+*.pem
+*.key
+.azure_sandboxes/
+
+# Training and evaluation outputs
+wandb/
+runs/
+checkpoints/
+trajectories/
+*.log
+*.tar.gz
+
+# Ray and editor state
+.ray/
+.idea/
+.vscode/
+*~

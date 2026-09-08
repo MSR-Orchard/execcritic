@@ -1,0 +1,4 @@
+# Run from the extracted archive root. This is an offline-test environment, not a GPU lockfile.
+-e ./swe_harness[azure_modal,dev]
+swebench==4.1.0
+aiohttp

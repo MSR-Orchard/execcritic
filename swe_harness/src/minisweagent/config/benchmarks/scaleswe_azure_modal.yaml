@@ -1,0 +1,35 @@
+# SWE-bench Azure Modal environment configuration
+#
+# This config provides Azure Modal sandbox environment settings for SWE-bench runs.
+# It should be used together with the base swebench config:
+#
+# Usage:
+#   mini-extra swebench -c swebench -c swebench_azure_modal --slice 0:2 [other options]
+#
+# The configs are merged, with swebench_azure_modal overriding the environment
+# settings to use Azure Modal sandbox orchestrator instead of Docker.
+#
+# Requirements:
+#   1. Set SANDBOX_BASE_URL to point to your orchestrator service
+#   2. Optionally set SANDBOX_API_KEY for authentication
+
+environment:
+  environment_class: azure_modal
+  timeout: 600
+  login_shell: true
+  env:
+    PAGER: cat
+    MANPAGER: cat
+    LESS: -R
+    PIP_PROGRESS_BAR: 'off'
+    TQDM_DISABLE: '1'
+  # Azure Modal sandbox settings
+  block_network: false
+  sandbox_timeout: 600
+  heartbeat_interval: 120
+  # base_url and api_key are read from SANDBOX_BASE_URL / SANDBOX_API_KEY env vars by default
+  # Uncomment to override:
+  # base_url: "http://localhost:8000"
+  # api_key: ""
+  cpu: "2"
+  memory: "8Gi"

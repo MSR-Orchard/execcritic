@@ -1,0 +1,169 @@
+agent:
+  instance_template: |
+    {% if max_generated_test_cases <= 1 %}
+    You are writing ONE new regression test that reproduces the original bug and targets a proposed candidate patch.
+    {% else %}
+    You are writing up to {{max_generated_test_cases}} regression tests that reproduce the original bug and target a proposed candidate patch.
+    {% endif %}
+    You are in a real shell at /testbed, checked out at the BUGGY commit: the bug is NOT yet fixed.
+    A correct generated test should cleanly fail here for the issue behavior.
+
+    <original_issue>
+    {{task}}
+    </original_issue>
+
+    A candidate patch for this same issue is shown below. Your goal is to design an
+    issue-backed public-behavior test that would pass a correct fix and expose this
+    candidate if it is incomplete, overfit, or wrong. Use the patch as diagnostic context
+    to choose a changed branch, sibling branch, edge case, or likely blind spot, but keep
+    the oracle grounded in the issue's promised behavior rather than patch text or
+    implementation shape.
+
+    <candidate_patch_metadata>
+    {{candidate_patch_metadata}}
+    </candidate_patch_metadata>
+
+    <candidate_patch>
+    {{candidate_patch}}
+    </candidate_patch>
+
+    {% if candidate_patch_truncated %}
+    The candidate patch was truncated by the harness before being shown. Use the visible
+    patch and changed-file metadata as hints, then inspect the repository for public behavior.
+    {% endif %}
+
+    {% if prompt_mode == "one_shot_gold" and example_src %}
+    A gold FAIL_TO_PASS test for this same issue is shown as a one-shot example.
+    Use it to understand the intended bug behavior and local test style. Do not copy it verbatim.
+
+    <example_fail_to_pass_test name="{{example_node}}">
+    {{example_src}}
+    </example_fail_to_pass_test>
+    {% endif %}
+
+    The conda `testbed` environment is already active for every command and the package under test
+    is installed/importable. Do not create a virtualenv, reinstall, or run pip.
+
+    Your first response must be exactly one grounding_plan tool call. Do not inspect the
+    repository, run bash, or write the test before the harness records this initial plan.
+    The plan should state your current x -> y hypothesis from the issue and how the
+    candidate patch helps choose a focused public-behavior test that targets this
+    candidate's changed behavior:
+    - issue_summary: what behavior is broken
+    - public_entrypoint: likely public API/command/object to test, or the candidate to verify
+    - public_integration_path: the user-facing path that should reach the behavior, such as public API -> object
+      method, CLI command, framework runner, documented workflow, or adjacent integration-test pattern
+    - trigger_input: x, the input/state that triggers the bug
+    - expected_output: y, the observable behavior expected after a correct fix
+    - evidence: why y follows from the issue, docs, existing tests, public invariants, or candidate-patch risk analysis
+    - candidate_patch_hypothesis: what this candidate appears to fix or risk breaking, without treating patch text as the oracle
+    - candidate_blind_spots: issue-backed branches, variants, or edge cases this candidate might miss or overfit
+    - discriminating_trigger_inputs: concrete public-behavior input(s) likely to distinguish a correct patch from this candidate
+    - why_this_test_should_distinguish_patch: why your planned test should pass a correct patch and fail this candidate if it is incomplete/overfit
+    - test_strategy: how to test behavior without relying on implementation details
+    - exploration_plan: what source/tests/APIs you will inspect to validate imports, fixtures, x -> y, and patch-related edge cases
+    - non_assertions: incidental details you will avoid pinning
+
+    The harness has already created this generated-test file:
+      /testbed/{{test_file}}
+
+    {% if starter_imports %}
+    The file already contains starter imports inferred by the harness:
+    {% for line in starter_imports %}
+      {{ line }}
+    {% endfor %}
+    Keep the useful imports and write your test below them.
+    {% endif %}
+    {% if starter_code %}
+    The current starter file is:
+    ```python
+    {{starter_code}}
+    ```
+    Replace the placeholder body or replace the whole file when you call write_generated_test.
+    {% endif %}
+
+    After the grounding_plan is recorded, run at least one bash inspection command against repository source,
+    existing tests, docs, or public APIs so you can understand behavior, call signatures, fixtures, runner
+    conventions, and whether your discriminating trigger inputs are actually issue-backed. When you are ready to
+    create or revise the generated regression test, call the write_generated_test tool with the
+    complete Python source for the test file and an oracle contract. Do not choose a destination
+    path or edit /testbed/{{test_file}} with bash; the harness only accepts generated tests written
+    through write_generated_test.
+
+    {% if max_generated_test_cases <= 1 %}
+    The generated file must contain exactly one test case:
+    - pytest style: one top-level test_* function
+    - unittest/Django style: one test_* method inside one test class
+    {% else %}
+    The generated file must contain at most {{max_generated_test_cases}} test cases:
+    - pytest style: up to {{max_generated_test_cases}} top-level test_* functions
+    - unittest/Django style: up to {{max_generated_test_cases}} test_* methods, preferably inside one test class
+    {% endif %}
+    - helper functions/classes are allowed only if they are not named test_*
+    - do not use pytest.mark.parametrize
+    - inside the single test case, include compact issue-backed trigger variants when they are needed
+      to distinguish this candidate patch from a correct fix
+
+    The oracle contract should say:
+    - entrypoint: the public API, command, object, or documented behavior under test
+    - public_integration_path: the concrete public integration path used by this test; this must not be a private
+      helper, internal module, source inspection path, or implementation shortcut
+    - trigger_input: x, the input/state that triggers the bug
+    - expected_output: y, the externally observable behavior expected after a correct fix
+    - evidence: why y is correct, such as issue_explicit, docs, existing_tests, public_invariant, or patch-risk analysis
+    - non_assertions: implementation details or output fragments intentionally not pinned
+
+    {{test_style_guidance}}
+
+    Rules:
+    - Use the candidate patch to identify likely blind spots, missing edge cases, or overfit behavior, but test only issue-backed public behavior.
+    - Prefer a trigger that exercises the candidate's changed branch, a sibling branch touched by the same condition,
+      a non-degenerate version of a symmetric formula, or a neighboring positive/negative control when the issue
+      is about validation, parsing, permissions, serialization, or lifecycle state.
+    - If the candidate touches symmetric branches, alternate modes, phase/state separation, encodings, or boundary
+      cases, include a compact public-behavior assertion for the distinguishing branch inside the same test case.
+    - Do not apply the candidate patch yourself. The harness owns any candidate-patch replay and will feed back
+      the result when that replay is configured.
+    - Explore the repo enough to ground the test in real public APIs, call signatures, and behavior.
+    - Prefer public integration paths over direct private helpers: use the same user-facing API, CLI,
+      documented object, framework runner, or adjacent-test workflow a maintainer would expect to support.
+    - For Django issues, prefer model/query/form/admin/template/migration/test-client behavior through Django's
+      public test classes and runner; avoid directly asserting private compiler/query internals unless the issue
+      explicitly makes that internal object the public contract.
+    - For pytest issues, prefer pytester/runpytest/CLI behavior over direct calls into internal parser helpers.
+      For Sphinx, prefer app builds, directives, domains, builders, or documented extension hooks. For
+      Matplotlib, prefer Figure/Axes/Artist APIs plus draw/save/pickle round trips when state or serialization
+      is involved. For scikit-learn, prefer estimator/public-function workflows such as fit/predict/transform.
+      For requests, prefer Request/Session/PreparedRequest flows. For Astropy/SymPy, prefer documented units,
+      table/io/modeling/symbols/functions/parser/printing APIs.
+    - For input/output bugs, identify the triggering input x and the expected observable output y.
+    - Derive y from the issue, documented semantics, existing behavior contracts, or stable public invariants.
+    - Exercise runtime behavior through public APIs, commands, or documented objects.
+    - Use source inspection and the candidate patch to learn how to write the test, not as the test oracle.
+    - Do not assert on source text, patch text, implementation snippets, line numbers, diff shape, or changed-file names.
+    - If the issue does not specify an exact output/value/message, assert a behavioral invariant any correct fix must satisfy.
+    - Avoid import, collection, syntax, network, sleep, randomness, or environment-only failures.
+    - Assert only behavior promised by the issue. Do not over-pin implementation details.
+    - Keep the regression focused on issue-backed triggers. Do not add unrelated controls or extra test cases
+      beyond the configured limit.
+    - Do not assert import strings, SQL shape, repr text, private attributes, internal node shapes, or intermediate
+      implementation state unless the issue explicitly makes that the public contract.
+    - Do not edit source code or unrelated tests.
+
+    Do not run the generated test command yourself. After write_generated_test updates /testbed/{{test_file}},
+    the harness will automatically run the repo-specific generated-test command and feed back a
+    structured result if it does not cleanly fail. Use that feedback to revise the test.
+    For patch-conditioned runs, after a clean buggy-base failure the harness may also replay the
+    generated test after applying the candidate patch. If that replay passes, strengthen the test
+    with an issue-backed discriminator for the candidate's changed branch or blind spot; if no
+    stronger issue-backed discriminator exists, call write_generated_test again with the same test
+    and oracle to confirm submission.
+    As soon as the harness observes a clean issue failure and any configured candidate replay
+    feedback is satisfied, it will submit the current generated test automatically.
+  require_patch_risk_plan: true
+  min_inspection_commands_after_grounding_plan: 1
+  candidate_replay_feedback_on_pass: true
+
+model:
+  model_kwargs:
+    tool_choice: required
