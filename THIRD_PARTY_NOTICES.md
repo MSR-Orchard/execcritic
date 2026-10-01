@@ -25,5 +25,7 @@ is not a copy of the separately distributed `aks_modal` client and does not incl
 server.
 
 Megatron-LM, PyTorch, CUDA, Ray, SGLang, Transformer Engine, FlashInfer, FlashAttention, DeepEP,
-datasets, checkpoints, and benchmark data are external dependencies and are not included. Their own
-licenses and dataset/benchmark terms apply.
+checkpoints, and evaluation artifacts are external dependencies and are not included. The training
+JSONL under `data/` derives from SWE-ReBench/SWE-rebench-V2, Scale-SWE, model-generated trajectories,
+and many upstream repositories. The underlying benchmark, model-provider, and repository licenses
+and terms continue to apply; see `DATA_CARD.md`.

@@ -55,9 +55,30 @@ training branch B: issue -> resolve-style test_patch -> candidate-patch classifi
 | `examples/mini_swe/resolve_native_rollout.py` | Native resolve-style test-patch rollout |
 | `examples/mini_swe/swe_reward.py` | Patch-classification reward implementation |
 | `examples/mini_swe/post_process_rewards.py` | Patch-classification reward normalization and turn penalty |
+| `data/` | Released Test-agent SFT, Test-agent RL, and Repair-agent RL JSONL shards |
 
-Results, trajectories, checkpoints, datasets, credentials, proxy logs, and sandbox state are
-deliberately excluded.
+Results, checkpoints, credentials, proxy logs, and sandbox state are deliberately excluded. The
+three released training datasets are documented separately and do not include evaluation results or
+checkpoint lineage.
+
+## Released training data
+
+| Dataset | Rows | Entry point |
+|---|---:|---|
+| DeepSeek-V4 Test-agent SFT trajectories | 6,257 | `data/sft/test_agent_deepseek_v4_flash_0731_cot/` |
+| Test-agent 4-positive/4-negative RL prompts | 1,822 | `data/rl/test_agent/` |
+| Repair-agent single-F2P RL prompts | 1,435 | `data/rl/repair_agent/` |
+
+The JSONL files are line-aligned shards under 80 MB. Validate their schemas, row counts, release
+safety scan, and SHA-256 hashes before use:
+
+```bash
+python data/validate_data.py
+```
+
+See [`DATA_CARD.md`](DATA_CARD.md) for composition, schemas, release transformations, limitations,
+and licensing notes. `data/manifest.json` records both the original-artifact hashes and the hashes
+of the public, safety-sanitized release.
 
 ## What you supply
 
@@ -71,8 +92,8 @@ deliberately excluded.
 5. For training, a compatible CUDA image with eight visible GPUs, Ray, Megatron-LM, SGLang,
    Transformer Engine, DeepEP, FlashAttention/flash-linear-attention, and the Qwen3.5
    tokenizer/model runtime. Megatron-LM and native CUDA dependencies are not vendored.
-6. The exact HF and torch-distributed checkpoints plus launcher-specific prompt/eval JSONL. Models,
-   checkpoints, datasets, W&B state, and sandbox credentials are not in the archive.
+6. The exact HF and torch-distributed checkpoints plus any evaluation JSONL required by your run.
+   Models, checkpoints, W&B state, evaluation data, and sandbox credentials are not in the archive.
 
 The builder excludes credential-like filenames and scans selected files for common private-key and
 W&B-key markers; those checks found no match in this snapshot. They are pattern-based checks, not a

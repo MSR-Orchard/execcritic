@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "release_date": "2026-10-01",
+  "partitioning": {
+    "method": "ordered, line-aligned shards",
+    "maximum_target_bytes_per_part": 80000000
+  },
+  "datasets": {
+    "test_agent_sft": {
+      "description": "DeepSeek-V4-Flash-0731 native-reasoning Test-agent trajectories",
+      "rows": 6257,
+      "bytes": 502294450,
+      "sha256": "69032413746d98d1948d79ef6dfeb8fb09bff68db20ece38d22ec6abf786a5e8",
+      "required_top_level_keys": [
+        "messages",
+        "metadata",
+        "tools"
+      ],
+      "source_artifact": {
+        "rows": 6257,
+        "bytes": 503610799,
+        "sha256": "ce1ba37a5b315af0c729ff840e059dd69d715c0cb26d1d5a02a83a7fdcd81a18"
+      },
+      "parts": [
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00000-of-00007.jsonl",
+          "rows": 958,
+          "bytes": 79995941,
+          "sha256": "92539d173343e640fbbcebcaf2f39420192607bb337675167110d514a5362143"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00001-of-00007.jsonl",
+          "rows": 1023,
+          "bytes": 79997867,
+          "sha256": "6396139d9c284d83de5d2aaa7e6d503038abe4924b91f0bc922059e8b2d64358"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00002-of-00007.jsonl",
+          "rows": 1027,
+          "bytes": 79957857,
+          "sha256": "d11cd7c9c44f029cc2731005f6d0c1475958a50d235d41f784ed881a00db88e1"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00003-of-00007.jsonl",
+          "rows": 971,
+          "bytes": 79971235,
+          "sha256": "0068d91254b4f8deb8e6298a0e440fab1edb72dc45ac2748e2dc3e7dc69199cd"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00004-of-00007.jsonl",
+          "rows": 975,
+          "bytes": 79982233,
+          "sha256": "fb6b40f11cfd5ede0fe20f67151f90c28152684bf7d1cd1add3bb92c2948cf36"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00005-of-00007.jsonl",
+          "rows": 1005,
+          "bytes": 79888724,
+          "sha256": "a534a7307ae3e36445de7dd7f57a83b8ca7540ccbf2d08087ca7e8f823208005"
+        },
+        {
+          "path": "data/sft/test_agent_deepseek_v4_flash_0731_cot/train-00006-of-00007.jsonl",
+          "rows": 298,
+          "bytes": 22500593,
+          "sha256": "fbc0783cfacbc751c23889bab0f14ea7c4ded8d4202c7abcd8d40d01607dd74d"
+        }
+      ]
+    },
+    "test_agent_rl": {
+      "description": "Scale-SWE and SWE-rebench-V2 4-positive/4-negative Test-agent GRPO prompts",
+      "rows": 1822,
+      "bytes": 106862417,
+      "sha256": "43e4339045be5b3cdfad2e8311d4b94e470b0c3dbe718b3889db02419c7ab0a7",
+      "required_top_level_keys": [
+        "id",
+        "metadata",
+        "patch",
+        "problem_statement",
+        "text"
+      ],
+      "source_artifact": {
+        "rows": 1822,
+        "bytes": 112820440,
+        "sha256": "f345a2a1abf803f8f6ed9707b8a87a3c5690e0394ff2d22859eab24f8fd4a156"
+      },
+      "parts": [
+        {
+          "path": "data/rl/test_agent/train-00000-of-00002.jsonl",
+          "rows": 1412,
+          "bytes": 79968353,
+          "sha256": "67092045f09b7c6ab91632100d383d1f085d061195630eb601030ac9ff41084a"
+        },
+        {
+          "path": "data/rl/test_agent/train-00001-of-00002.jsonl",
+          "rows": 410,
+          "bytes": 26894064,
+          "sha256": "4ae010c46bda6ef3a5bbea53f41764f2e309f4c15a4e17a8b7b898d4bce3727a"
+        }
+      ]
+    },
+    "repair_agent_rl": {
+      "description": "SWE-ReBench single-F2P Repair-agent GRPO prompts",
+      "rows": 1435,
+      "bytes": 19040191,
+      "sha256": "4230c642ffa7e1b2917bcd6cef8832cb2c8d2e9dde8b88fab937ce80ef6edf16",
+      "required_top_level_keys": [
+        "metadata",
+        "patch",
+        "problem_statement"
+      ],
+      "source_artifact": {
+        "rows": 1435,
+        "bytes": 19040202,
+        "sha256": "f23aeb8d155069d066fec4a1055063b9e2b2712f29251ca39a8344f2f1c98cbd"
+      },
+      "parts": [
+        {
+          "path": "data/rl/repair_agent/train-00000-of-00001.jsonl",
+          "rows": 1435,
+          "bytes": 19040191,
+          "sha256": "4230c642ffa7e1b2917bcd6cef8832cb2c8d2e9dde8b88fab937ce80ef6edf16"
+        }
+      ]
+    }
+  }
+}
